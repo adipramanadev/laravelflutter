@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:laravelflutter/controllers/databaseHelper.dart';
+import 'package:laravelflutter/view/detailPage.dart';
 
 import 'addPage.dart';
 
@@ -12,6 +13,16 @@ class Dashboard extends StatefulWidget {
 
 class _DashboardState extends State<Dashboard> {
   DatabaseHelper dbHelper = DatabaseHelper();
+  //method refresh indicator
+  Future refresh() async {
+    //wait 5 detik
+    await Future.delayed(const Duration(seconds: 5));
+
+    setState(() {
+      dbHelper.getApi();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,12 +48,25 @@ class _DashboardState extends State<Dashboard> {
       body: FutureBuilder(
         future: dbHelper.getApi(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) print(snapshot.error);
-          return snapshot.hasData
-              ? ItemList(list: snapshot.data)
-              : const Center(
-                  child: CircularProgressIndicator(),
-                );
+          // if (snapshot.hasError) print(snapshot.error);
+          if (snapshot.hasError) {
+            print(snapshot.error);
+            return Text('Error : ${snapshot.error}');
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          // return snapshot.hasData
+          //     ? ItemList(list: snapshot.data)
+          //     : const Center(
+          //         child: CircularProgressIndicator(),
+          //       );
+          return RefreshIndicator(
+            onRefresh: refresh,
+            child: ItemList(list: snapshot.data ?? []),
+          );
         },
       ),
     );
@@ -59,11 +83,21 @@ class ItemList extends StatelessWidget {
         itemBuilder: (context, index) {
           return Container(
             padding: const EdgeInsets.all(10.0),
-            child: Card(
-              child: ListTile(
-                title: Text(list[index]['nameproduct']),
-                subtitle: Text(list[index]['price'].toString()),
-                leading: const Icon(Icons.widgets),
+            child: GestureDetector(
+              onTap: () {
+                //DetailPage
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => DetailPage(list: list, index: index),
+                  ),
+                );
+              },
+              child: Card(
+                child: ListTile(
+                  title: Text(list[index]['nameproduct']),
+                  subtitle: Text(list[index]['price'].toString()),
+                  leading: const Icon(Icons.widgets),
+                ),
               ),
             ),
           );
